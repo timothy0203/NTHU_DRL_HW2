@@ -24,6 +24,7 @@ BATCH_SIZE = 2048
 # BATCH_SIZE = 32
 MEMORY_SIZE = 10000
 GAMMA = 0.99
+# EPSILON_MAX = 0.5
 EPSILON_MAX = 0.25
 # EPSILON_MAX = 1.0
 EPSILON_MIN = 0.1
@@ -53,14 +54,6 @@ class Agent(object):
         return action
 
     def build_model(self):
-        """ model = Sequential([
-            Conv2D(32, (8, 8), strides=(4, 4), activation='relu', input_shape=self.state_shape),
-            Conv2D(64, (4, 4), strides=(2, 2), activation='relu'),
-            Conv2D(64, (3, 3), activation='relu'),
-            Flatten(),
-            Dense(512, activation='relu'),
-            Dense(self.action_size)
-        ]) """
         model = Sequential([
         Conv2D(16, (8, 8), strides=(4, 4), activation='relu', input_shape=self.state_shape),
         Conv2D(32, (4, 4), strides=(2, 2), activation='relu'),
@@ -98,29 +91,4 @@ class Agent(object):
         if np.random.rand() <= self.epsilon:
             return np.random.choice(self.action_size)
         else:
-            return np.argmax(self.model.predict(state)[0])
-        
-    def replay(self):
-        if len(self.memory) < BATCH_SIZE:
-            return
-        batch = random.sample(self.memory, BATCH_SIZE)
-        count = 0
-        # Inside your agent.replay() method, ensure each state is correctly shaped
-        for state, action, reward, next_state, done in batch:
-            if count % 100 == 0:
-                print(f"count: {count}")
-            count += 1
-            # Ensure state is correctly shaped for the model
-            state = np.reshape(state, (-1, 84, 84, FRAME_STACK_SIZE))  # Reshape for prediction
-            next_state = np.reshape(next_state, (-1, 84, 84, FRAME_STACK_SIZE))  # Reshape for prediction
-
-            target = self.model.predict(state)
-            if done:
-                target[0][action] = reward
-            else:
-                Q_future = max(self.target_model.predict(next_state)[0])
-                target[0][action] = reward + GAMMA * Q_future
-            self.model.fit(state, target, epochs=1, verbose=0)
-
-        # Clear some of the memory after each replay iteration
-        self.memory = deque(list(self.memory)[len(self.memory)//8:], maxlen=MEMORY_SIZE)
+            return np.argmax(self.model.predict(state, verbose=0)[0])
