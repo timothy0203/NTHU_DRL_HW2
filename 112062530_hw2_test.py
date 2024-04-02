@@ -39,7 +39,7 @@ class Agent(object):
         self.state_shape = STATE_SHAPE
         self.action_size = 12
         self.memory = deque(maxlen=MEMORY_SIZE)
-        self.epsilon = 0.2
+        self.epsilon = 0.25
         self.target_update_counter = 0
         self.stacked_frames_var = np.zeros(STATE_SHAPE)
         self.model = self.build_model()
