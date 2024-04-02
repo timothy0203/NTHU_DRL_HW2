@@ -39,12 +39,12 @@ class Agent(object):
         self.state_shape = STATE_SHAPE
         self.action_size = 12
         self.memory = deque(maxlen=MEMORY_SIZE)
-        self.epsilon = 0.5
+        self.epsilon = 0.2
         self.target_update_counter = 0
         self.stacked_frames_var = np.zeros(STATE_SHAPE)
         self.model = self.build_model()
         # self.model.load_weights("../DDQN_model/112062530_hw2_data")
-        self.model = load_model("./112062530_hw2_data_2618_e49.h5")
+        self.model = load_model("./112062530_hw2_data_3763_e37.h5")
 
 
     def act(self, observation):
