@@ -39,28 +39,32 @@ class Agent(object):
         self.state_shape = STATE_SHAPE
         self.action_size = 12
         self.memory = deque(maxlen=MEMORY_SIZE)
-        self.epsilon = 0.25
+        self.epsilon = 0.4
         self.target_update_counter = 0
+        self.stacked_frames_var = np.zeros(STATE_SHAPE)
         self.model = self.build_model()
         # self.model.load_weights("../DDQN_model/112062530_hw2_data")
-        self.model = load_model("./112062530_hw2_data_1961_e72.h5")
+        self.model = load_model("./112062530_hw2_data_2618_e49.h5")
 
 
     def act(self, observation):
         state = self.preprocess_state(observation)
-        stacked_frames = np.zeros(STATE_SHAPE)
-        stacked_frames = self.stack_frames(stacked_frames, state, True)
-        action = self.choose_action(np.expand_dims(stacked_frames, axis=0))
+        if np.array_equal(self.stacked_frames_var, np.zeros(STATE_SHAPE)):
+            self.stacked_frames_var = self.stack_frames(np.zeros(STATE_SHAPE), state, True)
+        else:
+            self.stacked_frames_var = self.stack_frames(self.stacked_frames_var, state, False)
+
+        action = self.choose_action(np.expand_dims(self.stacked_frames_var, axis=0))
         return action
 
     def build_model(self):
         model = Sequential([
-        Conv2D(16, (8, 8), strides=(4, 4), activation='relu', input_shape=self.state_shape),
-        Conv2D(32, (4, 4), strides=(2, 2), activation='relu'),
-        Conv2D(32, (3, 3), activation='relu'),
-        Flatten(),
-        Dense(256, activation='relu'),
-        Dense(self.action_size)
+            Conv2D(16, (8, 8), strides=(4, 4), activation='relu', input_shape=self.state_shape),
+            Conv2D(32, (4, 4), strides=(2, 2), activation='relu'),
+            Conv2D(32, (3, 3), activation='relu'),
+            Flatten(),
+            Dense(256, activation='relu'),
+            Dense(self.action_size)
         ])
         model.compile(optimizer=Adam(learning_rate=LEARNING_RATE), loss='mse')
         return model
