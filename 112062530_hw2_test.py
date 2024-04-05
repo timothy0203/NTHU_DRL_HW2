@@ -44,7 +44,7 @@ class DDQNSolver(nn.Module):
 
 STATE_SPACE = (1, 84, 84)
 ACTION_SAPCE = 12
-EXPLORATION = 0.0075
+EXPLORATION = 0.001
 class Agent:
 
     def __init__(self):
@@ -54,7 +54,8 @@ class Agent:
         self.exploration_rate = EXPLORATION
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # self.model_path = "./DDQN_6129.pt"
-        self.model_path = "./DDQN_7894.pt"
+        self.model_path = "./DDQN_8163_e0.pt"
+        # self.model_path = "./DDQN_7894.pt"
         # self.model_path = "./DDQN_6708.pt"
         self.keep_action = 0
 
