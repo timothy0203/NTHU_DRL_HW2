@@ -1,98 +1,112 @@
+import torch
+import torch.nn as nn
+import random
+from tqdm import tqdm
+import pickle
+import numpy as np
+import collections 
+import cv2
+import matplotlib.pyplot as plt
 import gym
 import gym_super_mario_bros
-from gym_super_mario_bros.actions import COMPLEX_MOVEMENT
 from nes_py.wrappers import JoypadSpace
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D
-from tensorflow.keras.optimizers import Adam
-from collections import deque
-import random
-from skimage import color
-from skimage.transform import resize
-from tensorflow.keras.models import load_model
+from gym_super_mario_bros.actions import COMPLEX_MOVEMENT
+env = gym_super_mario_bros.make('SuperMarioBros-v0')
+env = JoypadSpace(env, COMPLEX_MOVEMENT)
 
+class DDQNSolver(nn.Module):
 
-FRAME_SKIP = 4  # Number of frames to skip/repeat action
-FRAME_STACK_SIZE = 4  # Number of frames to stack
-STATE_SHAPE = (84, 84, FRAME_STACK_SIZE)  # Adjust the channel dimension
-# ACTION_SIZE = env.action_space.n
-# BATCH_SIZE = 8192
-# BATCH_SIZE = 1024
-BATCH_SIZE = 2048
-# BATCH_SIZE = 32
-MEMORY_SIZE = 10000
-GAMMA = 0.99
-EPSILON_MAX = 0.5
-# EPSILON_MAX = 0.25
-# EPSILON_MAX = 1.0
-EPSILON_MIN = 0.1
-EPSILON_DECAY = 0.99995
-TARGET_UPDATE_FREQ = 1000
-LEARNING_RATE = 0.00025
+    def __init__(self, input_shape, n_actions):
+        super(DDQNSolver, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU()
+        )
 
-class Agent(object):
-    """Agent that acts randomly."""
-    def __init__(self):
-        # self.action_space = gym.spaces.Discrete(12)
-        self.state_shape = STATE_SHAPE
-        self.action_size = 12
-        self.memory = deque(maxlen=MEMORY_SIZE)
-        self.epsilon = 0.25
-        self.target_update_counter = 0
-        self.stacked_frames_var = np.zeros(STATE_SHAPE)
-        self.model = self.build_model()
-        # self.model.load_weights("../DDQN_model/112062530_hw2_data")
-        self.model = load_model("./112062530_hw2_data_3763_e37.h5")
-
-
-    def act(self, observation):
-        state = self.preprocess_state(observation)
-        if np.array_equal(self.stacked_frames_var, np.zeros(STATE_SHAPE)):
-            self.stacked_frames_var = self.stack_frames(np.zeros(STATE_SHAPE), state, True)
-        else:
-            self.stacked_frames_var = self.stack_frames(self.stacked_frames_var, state, False)
-
-        action = self.choose_action(np.expand_dims(self.stacked_frames_var, axis=0))
-        return action
-
-    def build_model(self):
-        model = Sequential([
-            Conv2D(16, (8, 8), strides=(4, 4), activation='relu', input_shape=self.state_shape),
-            Conv2D(32, (4, 4), strides=(2, 2), activation='relu'),
-            Conv2D(32, (3, 3), activation='relu'),
-            Flatten(),
-            Dense(256, activation='relu'),
-            Dense(self.action_size)
-        ])
-        model.compile(optimizer=Adam(learning_rate=LEARNING_RATE), loss='mse')
-        return model
+        conv_out_size = self._get_conv_out(input_shape)
+        self.fc = nn.Sequential(
+            nn.Linear(conv_out_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, n_actions)
+        )
     
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def _get_conv_out(self, shape):
+        o = self.conv(torch.zeros(1, *shape))
+        return int(np.prod(o.size()))
 
-    def preprocess_state(self, state):
-        state = color.rgb2gray(state)
-        state = resize(state, (84, 84), anti_aliasing=True)
-        state = np.expand_dims(state, axis=-1)  # Keep the last dimension for stacking
-        return state
+    def forward(self, x):
+        conv_out = self.conv(x).view(x.size()[0], -1)
+        return self.fc(conv_out)
+    
 
-    def stack_frames(self, stacked_frames, new_frame, is_new_episode):
-        if is_new_episode:
-            # Clear our stacked_frames
-            stacked_frames = np.zeros(STATE_SHAPE)
-            # Because we're in a new episode, copy the same frame 4x
-            for _ in range(FRAME_STACK_SIZE):
-                stacked_frames[:, :, _] = new_frame[:, :, 0]
+STATE_SPACE = (1, 84, 84)
+ACTION_SAPCE = 12
+EXPLORATION = 0.02
+class Agent:
+
+    def __init__(self):
+
+        self.state_space = STATE_SPACE
+        self.action_space = ACTION_SAPCE
+        self.exploration_rate = EXPLORATION
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model_path = "./DDQN_6129.pt"
+        self.keep_action = 0
+
+        self.local_net = DDQNSolver(STATE_SPACE, ACTION_SAPCE)
+        # self.local_net = DDQNSolver(state_space, action_space).to(self.device)
+        # self.target_net = DDQNSolver(state_space, action_space).to(self.device)
+            
+        self.local_net.load_state_dict(torch.load(self.model_path, map_location=torch.device(self.device)))
+        # self.target_net.load_state_dict(torch.load("dq2.pt", map_location=torch.device(self.device)))
+                    
+        # self.optimizer = torch.optim.Adam(self.local_net.parameters(), lr=lr)
+        # self.copy = 5000  # Copy the local model weights into the target network every 5000 steps
+        self.step = 0
+
+        # self.memory_sample_size = batch_size
+        
+        # Learning parameters
+        # self.gamma = gamma
+        # self.l1 = nn.SmoothL1Loss().to(self.device) # Also known as Huber loss
+        # self.exploration_max = exploration_max
+        # self.exploration_min = exploration_min
+        # self.exploration_decay = exploration_decay
+
+    def preprocess_state(self, frame):
+        # Step 1: ProcessFrame - Resize and grayscale
+        if frame.size == 240 * 256 * 3:
+            img = np.reshape(frame, [240, 256, 3]).astype(np.float32)
         else:
-            # Shift the oldest frame out and append the new frame at the end
-            stacked_frames = np.roll(stacked_frames, -1, axis=2)
-            stacked_frames[:, :, -1] = new_frame[:, :, 0]
-        return stacked_frames
+            raise ValueError("Unknown resolution.")
+        img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
+        resized_screen = cv2.resize(img, (84, 110), interpolation=cv2.INTER_AREA)
+        x_t = resized_screen[18:102, :]
+        x_t = np.reshape(x_t, [84, 84, 1])
 
-    def choose_action(self, state):
-        if np.random.rand() <= self.epsilon:
-            return np.random.choice(self.action_size)
-        else:
-            return np.argmax(self.model.predict(state, verbose=0)[0])
+        # Step 2: ImageToPyTorch - Change channel ordering
+        x_t = np.moveaxis(x_t, -1, 0)  # Change from HxWxC to CxHxW
+
+        # Step 3: ScaledFloatFrame - Scale pixels
+        x_t = x_t.astype(np.float32) / 255.0
+
+        return x_t
+
+    # checker version
+    def act(self, state):
+        # Epsilon-greedy action
+        if self.step % 4 == 0:
+            state = self.preprocess_state(state)
+            state = torch.Tensor(np.array([state]))
+            if random.random() < self.exploration_rate:  
+                action = torch.tensor([[random.randrange(self.action_space)]])
+            # Local net is used for the policy
+            else:
+                action =  torch.argmax(self.local_net(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu()
+            self.keep_action = int(action[0])
+        self.step += 1
+        return self.keep_action
