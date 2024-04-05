@@ -6,7 +6,6 @@ import pickle
 import numpy as np
 import collections 
 import cv2
-import matplotlib.pyplot as plt
 import gym
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
@@ -54,7 +53,7 @@ class Agent:
         self.action_space = ACTION_SAPCE
         self.exploration_rate = EXPLORATION
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model_path = "./DDQN_6129.pt"
+        self.model_path = "./DDQN_6618.pt"
         self.keep_action = 0
 
         self.local_net = DDQNSolver(STATE_SPACE, ACTION_SAPCE)
