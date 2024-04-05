@@ -54,8 +54,12 @@ class Agent:
         self.exploration_rate = EXPLORATION
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # self.model_path = "./DDQN_6129.pt"
-        self.model_path = "./DDQN_8163_e0.pt"
-        # self.model_path = "./DDQN_7894.pt"
+        # self.model_path = "./DDQN_7769_e0.pt" # 5193
+        # self.model_path = "./DDQN_7772_e0.pt" # 6119
+        # self.model_path = "./DDQN_7732_e0.pt" # 4348
+        self.model_path = "./DDQN_7888_e0.pt" # 6987
+        # self.model_path = "./DDQN_8163_e0.pt" # 6904
+        # self.model_path = "./DDQN_7894.pt" # 4986
         # self.model_path = "./DDQN_6708.pt"
         self.keep_action = 0
 
@@ -104,11 +108,11 @@ class Agent:
         if self.step % 4 == 0:
             state = self.preprocess_state(state)
             state = torch.Tensor(np.array([state]))
-            if random.random() < self.exploration_rate:  
-                action = torch.tensor([[random.randrange(self.action_space)]])
-            # Local net is used for the policy
-            else:
-                action =  torch.argmax(self.local_net(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu()
+            # if random.random() < self.exploration_rate:  
+            #     action = torch.tensor([[random.randrange(self.action_space)]])
+            # # Local net is used for the policy
+            # else:
+            action =  torch.argmax(self.local_net(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu()
             self.keep_action = int(action[0])
         self.step += 1
         return self.keep_action
