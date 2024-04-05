@@ -55,6 +55,7 @@ class Agent:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # self.model_path = "./DDQN_6129.pt"
         self.model_path = "./DDQN_6618.pt"
+        # self.model_path = "./DDQN_6708.pt"
         self.keep_action = 0
 
         self.local_net = DDQNSolver(STATE_SPACE, ACTION_SAPCE)
