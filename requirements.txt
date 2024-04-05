@@ -5,3 +5,4 @@ argparse
 tensorflow
 scikit-image
 gym_super_mario_bros
+opencv-python
