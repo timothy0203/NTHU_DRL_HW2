@@ -53,6 +53,7 @@ class Agent:
         self.action_space = ACTION_SAPCE
         self.exploration_rate = EXPLORATION
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # self.model_path = "./DDQN_6129.pt"
         self.model_path = "./DDQN_6618.pt"
         self.keep_action = 0
 
