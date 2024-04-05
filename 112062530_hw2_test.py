@@ -44,7 +44,7 @@ class DDQNSolver(nn.Module):
 
 STATE_SPACE = (1, 84, 84)
 ACTION_SAPCE = 12
-EXPLORATION = 0.001
+EXPLORATION = 0.0
 class Agent:
 
     def __init__(self):
