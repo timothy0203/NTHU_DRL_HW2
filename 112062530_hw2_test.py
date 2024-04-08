@@ -44,7 +44,7 @@ class DDQNSolver(nn.Module):
 
 STATE_SPACE = (1, 84, 84)
 ACTION_SAPCE = 12
-EXPLORATION = 0.0
+EXPLORATION = 0.001
 class Agent:
 
     def __init__(self):
@@ -59,9 +59,14 @@ class Agent:
         # self.model_path = "./DDQN_7732_e0.pt" # 4348
         # self.model_path = "./DDQN_8020_e0.pt" # 
         # self.model_path = "./DDQN_7888_e0.pt" # 6987
-        self.model_path = "./DDQN_8163_e0.pt" # 6904
+        # self.model_path = "./DDQN_8263_e0.pt" # 5329.5
+        # self.model_path = "./DDQN_8619_e0.pt" # 5329.5
+        # self.model_path = "./DDQN_8010_e0.pt" # 
         # self.model_path = "./DDQN_7894.pt" # 4986
         # self.model_path = "./DDQN_6708.pt"
+        # self.model_path = "./DDQN_8163_e0.pt" # 0, 6161.92
+        # self.model_path = "./DDQN_7646_epi_50.pt" # 7457
+        self.model_path = "./112062530_hw2_data" # 7457
         self.keep_action = 0
 
         self.local_net = DDQNSolver(STATE_SPACE, ACTION_SAPCE)
